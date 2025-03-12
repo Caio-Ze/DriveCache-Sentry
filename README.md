@@ -1,104 +1,117 @@
 # DriveCache Sentry
 
-An ultra-lightweight macOS menu bar app that monitors Google Drive cache and other folder sizes, sending notifications when they exceed custom thresholds.
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![macOS](https://img.shields.io/badge/macOS-12.0%2B-blue)
+![Swift](https://img.shields.io/badge/Swift-5.0-orange)
 
-## Features
+A macOS menu bar application that monitors folder sizes and sends notifications when specified thresholds are exceeded.
 
-- Lives in your macOS menu bar with a minimal 💾 icon
-- Specializes in Google Drive cache monitoring (default folder: DriveFS/Metadata)
-- Monitors multiple folders simultaneously with customizable thresholds
-- **Independent size thresholds** for each monitored folder
-- Ultra-fast, non-recursive size scanning for maximum performance
-- Daily checks at 16:10 (4:10 PM) that notify only when folders exceed threshold
-- Minimal interface with no dock icon
-- Anti-freeze protection - prevents app from hanging during file operations
+## Functionality
 
-## Requirements
+This application:
+- Displays in the macOS menu bar
+- **Can monitor any folder on your system** - not limited to specific directories
+- Allows monitoring multiple folders simultaneously with independent thresholds
+- Monitors the Google Drive cache directory by default
+- Implements folder size scanning without recursion
+- Performs scheduled daily checks at 16:10 (4:10 PM)
+- Sends notifications when folder sizes exceed set thresholds
+- Operates as a background application without a dock icon
 
-- macOS 12.0 (Monterey) or later
+## Installation
+
+### Pre-built Application
+
+1. Download from [Releases](https://github.com/Caio-Ze/DriveCache-Sentry/releases)
+2. Extract the ZIP file
+3. Move the application to your preferred location
+4. Launch the application
+
+### Building from Source
+
+Requirements:
+- macOS 12.0 or later
 - Xcode 13.0 or later
 
-## Building the App
-
-### Using Xcode
-1. Open Xcode and create a new macOS project
-2. Replace the generated files with the files from this repository
-3. Build and run the app
-
-### Using the Script
-For quick testing, you can use the provided shell script:
+Using Terminal:
 ```bash
+git clone https://github.com/Caio-Ze/DriveCache-Sentry.git
+cd DriveCache-Sentry
+chmod +x run_lightweight_app.sh
 ./run_lightweight_app.sh
 ```
 
-## How to Use
+## Usage Instructions
 
-1. After launching, look for the 💾 icon in your menu bar
-2. Click the icon to access the app's menu with your monitored folders
-3. Click on any folder to check its current size or access its options:
-   - **Check Size** - Show the current folder size
-   - **Set Threshold...** - Set a custom threshold for this specific folder
-   - **Remove** - Remove this folder from monitoring
-4. Use these options to manage folders:
-   - "Check All Folders" - Shows the current size of all folders at once
-   - "Add Folder..." - Add a new folder to monitor (prompts for threshold)
-5. The app automatically checks all folders daily at 16:10 (4:10 PM)
-6. You will receive a notification ONLY if any folder size exceeds its specific threshold
+1. The application appears as a disk icon in the menu bar
+2. Click the icon to view the application menu
+3. The menu displays all monitored folders
+4. For each folder, the following actions are available:
+   - Check Size: Display current folder size
+   - Set Threshold: Configure size threshold
+   - Remove: Stop monitoring the folder
+5. Additional menu options:
+   - Check All Folders: Display sizes of all monitored folders
+   - Add Folder: Select a new folder to monitor
+   
+## Adding Folders to Monitor
 
-## Default Settings
+The application can monitor any folder on your system:
+1. Click on the menu bar icon
+2. Select "Add Folder..."
+3. Use the file browser to select any folder on your disk
+4. Set a threshold size for the selected folder
+5. The folder will now be monitored for size changes
 
-- Default monitored folder: `~/Library/Application Support/Google/DriveFS/Metadata` (Google Drive cache)
+## Configuration
+
+Default settings:
+- Initial monitored folder: `~/Library/Application Support/Google/DriveFS/Metadata`
 - Default threshold: 1000 MB (1 GB) per folder
-- Daily check time: 16:10 (4:10 PM)
+- Scheduled check: Daily at 16:10 (4:10 PM)
 
-## Why DriveCache Sentry Is Better
+## Technical Details
 
-DriveCache Sentry offers several advantages over typical folder monitoring tools:
+Implementation features:
+- Non-recursive folder size calculation
+- Memory usage optimization
+- Status indicator during scanning operations
+- Notification system triggered by threshold conditions
+- No limitations on folder types or locations that can be monitored
 
-1. **Specialized Google Drive focus**: Optimized for monitoring Google Drive cache, which can grow unexpectedly
-2. **Minimal resource usage**: Uses ultra-lightweight scanning that only checks top-level files
-3. **No recursive scanning**: Avoids the performance hit of deep directory traversal
-4. **Individual thresholds**: Each folder can have its own custom size threshold
-5. **Intelligent notifications**: Only notifies once per day when thresholds are exceeded
-6. **Visual feedback**: Shows scanning progress with menu bar icon changes
-7. **All native Swift**: Built with native macOS APIs for maximum efficiency
+## Auto-start Configuration
 
-## Performance Optimizations
+To configure the application to start automatically:
 
-This app has been extremely optimized for performance and low resource usage:
+1. Open System Settings
+2. Navigate to General > Login Items
+3. Add the application to the list
+4. The application will start when you log in
 
-- **Ultra-fast scanning**: Only top-level scanning without recursion for maximum speed
-- **Memory efficient**: Minimizes memory allocation during scans
-- **Anti-freeze protection**: Prevents app from hanging during scans
-- **Visual indicators**: Shows when scanning is in progress (⏳ icon)
-- **Notification efficiency**: Only sends one notification per day when folders exceed threshold
-
-## Setting Up Launch at Login
-
-To have the app launch automatically when you log in:
-
-1. Go to **System Settings > General > Login Items** (macOS Ventura or later)
-2. Click the "+" button to add an app
-3. Locate and select the built DriveCacheSentry.app
-4. The app will now launch automatically when you log in
-
-## Project Structure
+## Repository Structure
 
 ```
 DriveCache-Sentry/
-├── docs/
-│   └── Instructions.md
-├── MyMenuBarApp/
-│   ├── AppDelegate.swift       # Contains the app delegate and monitoring logic
-│   ├── Info.plist              # Contains LSUIElement = YES to hide the Dock icon
-│   ├── Assets.xcassets         # Contains app icons and other resources
-│   └── Other Swift files       # Additional files and resources for the app
-├── main.swift                  # Initializes the application for command-line builds
-├── Info.plist                  # Application property list for command-line builds
-├── run_lightweight_app.sh      # Shell script for quick building and testing
-└── README.md                   # This file
+├── Screenshots/            # Application screenshots
+├── Source/                 # Source code files
+│   ├── AppDelegate.swift   # Application delegate and core logic
+│   ├── Info.plist          # Application configuration
+│   └── Assets.xcassets     # Application resources
+├── main.swift              # Application entry point
+├── run_lightweight_app.sh  # Build script
+└── README.md               # Documentation
 ```
+
+## Contributing
+
+To contribute to this project:
+
+1. Fork the repository
+2. Create a branch for your changes
+3. Implement and test your changes
+4. Submit a pull request
+5. Follow the project code style and documentation standards
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project uses the MIT License. See the [LICENSE](LICENSE) file for details. 

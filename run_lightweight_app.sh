@@ -1,6 +1,14 @@
 #!/bin/bash
 
-echo "=== Building and Running DriveCache Sentry ==="
+# Check for --no-run flag (used in CI)
+NO_RUN=false
+for arg in "$@"; do
+  if [ "$arg" = "--no-run" ]; then
+    NO_RUN=true
+  fi
+done
+
+echo "=== Building DriveCache Sentry ==="
 echo "Building app (this may take a moment)..."
 
 # Create build directory if it doesn't exist
@@ -16,8 +24,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Kill any existing instances
-killall LightMenuBarApp &>/dev/null
+# Kill any existing instances if we're going to run
+if [ "$NO_RUN" = false ]; then
+  killall LightMenuBarApp &>/dev/null
+fi
 
 # Make it executable just in case
 chmod +x build/LightMenuBarApp
@@ -49,16 +59,23 @@ cat > build/LightMenuBarApp.app/Contents/Info.plist << EOL
 EOL
 
 echo "Build successful!"
-echo "Running app..."
 
-# Start the app
-open build/LightMenuBarApp.app
-
-echo "App running in the background. Look for the 💾 icon in your menu bar."
-echo "Features:"
-echo "- Monitor multiple folders simultaneously"
-echo "- Ultra-fast, non-recursive folder scanning"
-echo "- Anti-freeze protection with visual indicators"
-echo "- Daily checks at 16:10 with threshold-based notifications"
-echo ""
-echo "To configure folders and settings, click the 💾 icon in the menu bar." 
+# Only run the app if not in CI mode
+if [ "$NO_RUN" = false ]; then
+  echo "Running app..."
+  
+  # Start the app
+  open build/LightMenuBarApp.app
+  
+  echo "App running in the background. Look for the 💾 icon in your menu bar."
+  echo "Features:"
+  echo "- Monitor multiple folders simultaneously"
+  echo "- Ultra-fast, non-recursive folder scanning"
+  echo "- Anti-freeze protection with visual indicators"
+  echo "- Daily checks at 16:10 with threshold-based notifications"
+  echo ""
+  echo "To configure folders and settings, click the 💾 icon in the menu bar."
+else
+  echo "App built successfully but not running (--no-run flag detected)"
+  echo "App bundle created at: $(pwd)/build/LightMenuBarApp.app"
+fi 

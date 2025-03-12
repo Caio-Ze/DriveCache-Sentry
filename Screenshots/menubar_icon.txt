@@ -1,0 +1,9 @@
+This is a placeholder for the menubar_icon.png file.
+
+You should replace this with an actual screenshot of the menu bar app in action.
+
+For a proper screenshot:
+1. Take a screenshot of your menu bar showing the 💾 icon
+2. Take another screenshot of the menu when clicked
+3. Save them as PNG files in this directory
+4. Update the README.md to point to these images 

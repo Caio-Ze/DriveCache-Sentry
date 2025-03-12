@@ -1,0 +1,31 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Build
+      run: |
+        chmod +x run_lightweight_app.sh
+        ./run_lightweight_app.sh --no-run
+    
+    - name: Archive app
+      uses: actions/upload-artifact@v3
+      with:
+        name: DriveCache-Sentry
+        path: build/LightMenuBarApp.app
+        if-no-files-found: error 
