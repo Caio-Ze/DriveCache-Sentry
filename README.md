@@ -8,15 +8,13 @@ A macOS menu bar application that monitors folder sizes and sends notifications 
 
 ## Functionality
 
-This application:
-- Displays in the macOS menu bar
-- **Can monitor any folder on your system** - not limited to specific directories
-- Allows monitoring multiple folders simultaneously with independent thresholds
-- Monitors the Google Drive cache directory by default
-- Implements folder size scanning without recursion
-- Performs scheduled daily checks at 16:10 (4:10 PM)
-- Sends notifications when folder sizes exceed set thresholds
-- Operates as a background application without a dock icon
+A simple menu bar application that monitors folder sizes on your Mac. Because in our ever-advancing technological landscape, knowing when Google Drive's cache folder silently grows to consume your storage is apparently something we need to worry about now.
+
+It sits in your menu bar as a disk icon, doing what modern operating systems somehow still can't do on their own - tell you when folders get too big.
+
+Set custom thresholds for any folder you want to keep an eye on. Particularly useful for that Google Drive cache that mysteriously expands when you're not looking.
+
+It performs a daily check at 16:20. Like it or not.
 
 ## Installation
 
