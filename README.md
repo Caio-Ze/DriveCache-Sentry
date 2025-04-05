@@ -66,7 +66,7 @@ The application can monitor any folder on your system:
 Default settings:
 - Initial monitored folder: `~/Library/Application Support/Google/DriveFS/Metadata`
 - Default threshold: 1000 MB (1 GB) per folder
-- Scheduled check: Daily at 16:10 (4:10 PM)
+- Scheduled check: Daily at 16:20 (4:20 PM)
 
 ## Technical Details
 

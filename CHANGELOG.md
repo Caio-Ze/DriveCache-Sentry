@@ -12,6 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu bar app that monitors Google Drive cache and other folder sizes
 - Customizable thresholds for each monitored folder
 - Ultra-fast, non-recursive size scanning
-- Daily automated checks at 16:10
+- Daily automated checks at 16:20
 - Visual feedback with menu bar icon changes
 - Notifications when folders exceed thresholds 

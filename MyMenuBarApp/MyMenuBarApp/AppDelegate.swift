@@ -49,13 +49,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             self.checkMenuStatus()
         }
         
-        // Request notification permissions and schedule check
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { success, error in
-            print("Notification authorization: \(success), error: \(String(describing: error))")
-            // Schedule only after we have permission
-            DispatchQueue.main.async {
-                self.scheduleNextCheck()
+        // Safely request notification permissions and schedule check
+        do {
+            // Try to get notification center - this can fail in non-bundle environments
+            guard let center = try? UNUserNotificationCenter.current() else {
+                print("Warning: Unable to access notification center. Running in limited mode.")
+                return
             }
+            
+            center.requestAuthorization(options: [.alert, .sound]) { success, error in
+                print("Notification authorization: \(success), error: \(String(describing: error))")
+                // Schedule only after we have permission
+                DispatchQueue.main.async {
+                    self.scheduleNextCheck()
+                }
+            }
+        } catch {
+            print("Error setting up notifications: \(error). Running in limited mode.")
         }
         
         print("App launch setup complete")
@@ -440,6 +450,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         return formatter.string(fromByteCount: size)
     }
     
+    // MARK: - Notification Helpers
+    
+    private func safelySendNotification(title: String, body: String, identifier: String) {
+        guard let center = try? UNUserNotificationCenter.current() else {
+            print("Warning: Unable to access notification center. Showing alert instead.")
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = title
+                alert.informativeText = body
+                alert.addButton(withTitle: "OK")
+                NSApp.activate(ignoringOtherApps: true)
+                alert.runModal()
+            }
+            return
+        }
+        
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = UNNotificationSound.default
+        
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: nil
+        )
+        
+        center.add(request) { error in
+            if let error = error {
+                print("Error posting notification: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     // MARK: - Check and Notification Functions
     
     @objc private func checkFolderSize(_ sender: NSMenuItem) {
@@ -512,15 +556,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     }
                     
                     print("📱 Creating notification with folder size result")
-                    let content = UNMutableNotificationContent()
-                    content.title = "Folder Size"
-                    content.body = "\(folderName) is currently \(formattedSize)\nThreshold: \(formattedThreshold)"
-                    content.sound = UNNotificationSound.default
-                    
-                    let request = UNNotificationRequest(
-                        identifier: "size-\(folderPath.hash)",
-                        content: content,
-                        trigger: nil
+                    let notificationBody = "\(folderName) is currently \(formattedSize)\nThreshold: \(formattedThreshold)"
+                    self.safelySendNotification(
+                        title: "Folder Size",
+                        body: notificationBody,
+                        identifier: "size-\(folderPath.hash)"
                     )
                     
                     // Also show an alert with the result
@@ -531,15 +571,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     alert.addButton(withTitle: "OK")
                     NSApp.activate(ignoringOtherApps: true)
                     alert.runModal()
-                    
-                    print("🔔 Scheduling notification")
-                    UNUserNotificationCenter.current().add(request) { error in
-                        if let error = error {
-                            print("❌ Error posting notification: \(error.localizedDescription)")
-                        } else {
-                            print("✅ Notification scheduled successfully")
-                        }
-                    }
                     
                     self.isScanning = false
                     print("✅ Folder size check complete")
@@ -600,12 +631,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     return
                 }
                 
-                let content = UNMutableNotificationContent()
+                let title: String
+                var body = ""
                 
                 if anyExceedsThreshold {
-                    content.title = "Size Threshold Exceeded"
+                    title = "Size Threshold Exceeded"
                     
-                    var body = ""
                     for (name, size, threshold, exceeded) in results {
                         let formattedSize = self.formatFileSize(size)
                         let formattedThreshold = self.formatFileSize(threshold)
@@ -613,32 +644,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                         body += "\(name): \(formattedSize) [\(status)]\n"
                     }
                     
-                    content.body = body.trimmingCharacters(in: .newlines)
-                    
                     // Mark as notified today
                     self.defaults.set(Date(), forKey: self.lastNotificationKey)
                 } else {
-                    content.title = "All Folders Under Threshold"
+                    title = "All Folders Under Threshold"
                     
-                    var body = ""
                     for (name, size, threshold, _) in results {
                         let formattedSize = self.formatFileSize(size)
                         let formattedThreshold = self.formatFileSize(threshold)
                         body += "\(name): \(formattedSize) / \(formattedThreshold)\n"
                     }
-                    
-                    content.body = body.trimmingCharacters(in: .newlines)
                 }
                 
-                content.sound = UNNotificationSound.default
-                
-                let request = UNNotificationRequest(
-                    identifier: "size-check-all",
-                    content: content,
-                    trigger: nil
+                body = body.trimmingCharacters(in: .newlines)
+                self.safelySendNotification(
+                    title: title,
+                    body: body,
+                    identifier: "size-check-all"
                 )
                 
-                UNUserNotificationCenter.current().add(request)
                 self.isScanning = false
             }
         }
@@ -680,9 +704,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             
             DispatchQueue.main.async {
                 if anyExceedsThreshold {
-                    let content = UNMutableNotificationContent()
-                    content.title = "Folder Size Alert"
-                    
                     var body = "The following folders exceed their thresholds:\n\n"
                     for (name, size, threshold) in exceededFolders {
                         let formattedSize = self.formatFileSize(size)
@@ -690,16 +711,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                         body += "\(name): \(formattedSize) exceeds \(formattedThreshold)\n"
                     }
                     
-                    content.body = body.trimmingCharacters(in: .newlines)
-                    content.sound = UNNotificationSound.default
-                    
-                    let request = UNNotificationRequest(
-                        identifier: "threshold-exceeded",
-                        content: content,
-                        trigger: nil
+                    body = body.trimmingCharacters(in: .newlines)
+                    self.safelySendNotification(
+                        title: "Folder Size Alert",
+                        body: body,
+                        identifier: "threshold-exceeded"
                     )
                     
-                    UNUserNotificationCenter.current().add(request)
                     self.defaults.set(Date(), forKey: self.lastNotificationKey)
                 }
                 
@@ -711,18 +729,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - Scheduling
     
     private func scheduleNextCheck() {
-        // Calculate time until 16:10 today or tomorrow
+        // Calculate time until 16:20 today or tomorrow
         let now = Date()
         let calendar = Calendar.current
         var dateComponents = calendar.dateComponents([.year, .month, .day], from: now)
         
         dateComponents.hour = 16
-        dateComponents.minute = 10
+        dateComponents.minute = 20
         dateComponents.second = 0
         
         guard var targetDate = calendar.date(from: dateComponents) else { return }
         
-        // If it's already past 16:10, schedule for tomorrow
+        // If it's already past 16:20, schedule for tomorrow
         if now >= targetDate {
             targetDate = calendar.date(byAdding: .day, value: 1, to: targetDate) ?? targetDate
         }
@@ -761,7 +779,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         • Monitors multiple folders
         • Custom thresholds for each folder
         • Ultra-fast, non-recursive scanning
-        • Daily checks at 16:10
+        • Daily checks at 16:20
         
         Version 1.0
         """

@@ -72,7 +72,7 @@ if [ "$NO_RUN" = false ]; then
   echo "- Monitor multiple folders simultaneously"
   echo "- Ultra-fast, non-recursive folder scanning"
   echo "- Anti-freeze protection with visual indicators"
-  echo "- Daily checks at 16:10 with threshold-based notifications"
+  echo "- Daily checks at 16:20 with threshold-based notifications"
   echo ""
   echo "To configure folders and settings, click the 💾 icon in the menu bar."
 else
