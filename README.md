@@ -14,7 +14,7 @@ It sits in your menu bar as a disk icon, doing what modern operating systems som
 
 Set custom thresholds for any folder you want to keep an eye on. Particularly useful for that Google Drive cache that mysteriously expands when you're not looking.
 
-It performs a daily check at 16:20. Like it or not. 🏳️‍🌈
+It performs a daily check at 16:20. Like it or not. 
 
 ## Installation
 
