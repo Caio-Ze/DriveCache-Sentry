@@ -18,18 +18,19 @@ It performs a daily check at 16:20. Like it or not. 🏳️‍🌈
 
 ## Installation
 
-### Pre-built Application
+### Download Pre-built Application (Recommended)
 
-1. Download from [Releases](https://github.com/Caio-Ze/DriveCache-Sentry/releases)
-2. Extract the ZIP file
-3. Move the application to your preferred location
-4. Launch the application
+1. Download the latest release from [GitHub Releases](https://github.com/Caio-Ze/DriveCache-Sentry/releases/latest)
+2. Extract the zip file
+3. Move LightMenuBarApp.app to your Applications folder
+4. Right-click on the app and select "Open" (required first time to bypass security)
+5. Look for the 💾 icon in your menu bar
 
 ### Building from Source
 
 Requirements:
 - macOS 12.0 or later
-- Xcode 13.0 or later
+- Xcode 13.0 or later (or just command-line tools)
 
 Using Terminal:
 ```bash
