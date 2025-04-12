@@ -24,7 +24,7 @@ jobs:
         ./run_lightweight_app.sh --no-run
     
     - name: Archive distribution package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: DriveCache-Sentry-Package
         path: build/DriveCache-Sentry-v*.zip
