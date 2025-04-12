@@ -16,7 +16,9 @@ Set custom thresholds for any folder you want to keep an eye on. Particularly us
 
 Folders exceeding their threshold will be marked with a red dot (●) next to their name in the dropdown menu for easy identification.
 
-It performs a daily check at 16:20. Like it or not. 🏳️‍🌈
+![](Screenshots/Screenshot%202025-04-12%20at%2002.18.30.png)
+
+It performs a daily check at 16:20. Like it or not. 🏳️‍��
 
 ## Installation
 
@@ -46,14 +48,20 @@ chmod +x run_lightweight_app.sh
 
 1. The application appears as a disk icon in the menu bar
 2. Click the icon to view the application menu
-3. The menu displays all monitored folders
-4. For each folder, the following actions are available:
-   - Check Size: Display current folder size
-   - Set Threshold: Configure size threshold
-   - Remove: Stop monitoring the folder
+3. The menu displays all monitored folders (with a ● indicator if over threshold)
+4. For each folder, the following actions are available in its submenu:
+   - Check Size: Display current folder size in a notification and alert.
+   - Set Threshold: Configure size threshold (in MB).
+   - Remove: Stop monitoring the folder.
 5. Additional menu options:
-   - Check All Folders: Display sizes of all monitored folders
-   - Add Folder: Select a new folder to monitor
+   - Check All Folders: Display sizes of all monitored folders via notification.
+   - Add Folder: Select a new folder to monitor.
+   - About: Show application details.
+   - Quit: Exit the application.
+
+Example size check alert:
+
+![](Screenshots/Screenshot%202025-04-12%20at%2002.18.45.png)
    
 ## Adding Folders to Monitor
 
