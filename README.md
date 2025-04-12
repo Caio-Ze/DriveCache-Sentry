@@ -4,7 +4,7 @@
 ![macOS](https://img.shields.io/badge/macOS-12.0%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.0-orange)
 
-A macOS menu bar application that monitors folder sizes and sends notifications when specified thresholds are exceeded.
+A macOS menu bar application that monitors folder sizes and sends notifications when specified thresholds are exceeded. Features a red dot indicator (●) for quick status checks directly in the menu.
 
 ## Functionality
 
@@ -13,6 +13,8 @@ A simple menu bar application that monitors folder sizes on your Mac. Because in
 It sits in your menu bar as a disk icon, doing what modern operating systems somehow still can't do on their own - tell you when FOLDERS CACHE get too big.
 
 Set custom thresholds for any folder you want to keep an eye on. Particularly useful for that Google Drive cache that mysteriously expands when you're not looking.
+
+Folders exceeding their threshold will be marked with a red dot (●) next to their name in the dropdown menu for easy identification.
 
 It performs a daily check at 16:20. Like it or not. 🏳️‍🌈
 
@@ -72,7 +74,7 @@ Default settings:
 ## Technical Details
 
 Implementation features:
-- Non-recursive folder size calculation
+- Depth-limited (5 levels deep) recursive folder size calculation
 - Memory usage optimization
 - Status indicator during scanning operations
 - Notification system triggered by threshold conditions

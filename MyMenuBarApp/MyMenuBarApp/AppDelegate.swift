@@ -912,10 +912,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         
         • Monitors multiple folders
         • Custom thresholds for each folder
-        • Ultra-fast, non-recursive scanning
+        • Depth-limited recursive scanning (5 levels)
+        • Red dot indicator (●) for exceeded folders in menu
         • Daily checks at 16:20
         
-        Version 1.0
+        Version 1.0.1 (Internal Build)
         """
         alert.addButton(withTitle: "OK")
         
