@@ -6,7 +6,7 @@ APP_BUNDLE_NAME="${APP_NAME}.app"
 VERSION="1.0.1" # Match version in About dialog
 BUILD_DIR="build"
 RESOURCES_DIR="Resources"
-ICON_NAME="AppIcon.icns"
+ICON_NAME="Google-Noto-Emoji-Objects-62835-floppy-disk.icns"
 FINAL_ZIP_NAME="DriveCache-Sentry-v${VERSION}.zip"
 
 # macOS Deployment Target (Monterey)

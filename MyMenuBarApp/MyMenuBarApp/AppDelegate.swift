@@ -921,7 +921,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         alert.addButton(withTitle: "OK")
         
         // Set the application icon for the alert
-        if let appIcon = NSImage(named: "AppIcon") {
+        if let appIcon = NSImage(named: "Google-Noto-Emoji-Objects-62835-floppy-disk") {
             alert.icon = appIcon
         } else {
             // Fallback if AppIcon.icns isn't found in bundle
