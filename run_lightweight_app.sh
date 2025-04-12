@@ -1,6 +1,28 @@
 #!/bin/bash
 
-# Check for --no-run flag (used in CI)
+# === Configuration ===
+APP_NAME="LightMenuBarApp"
+APP_BUNDLE_NAME="${APP_NAME}.app"
+VERSION="1.0.1" # Match version in About dialog
+BUILD_DIR="build"
+RESOURCES_DIR="Resources"
+ICON_NAME="AppIcon.icns"
+FINAL_ZIP_NAME="DriveCache-Sentry-v${VERSION}.zip"
+
+# macOS Deployment Target (Monterey)
+DEPLOYMENT_TARGET="12.0"
+
+# Paths
+INTEL_BUILD_PATH="${BUILD_DIR}/intel/${APP_NAME}"
+ARM_BUILD_PATH="${BUILD_DIR}/arm/${APP_NAME}"
+UNIVERSAL_EXEC_PATH="${BUILD_DIR}/universal/${APP_NAME}"
+APP_BUNDLE_PATH="${BUILD_DIR}/${APP_BUNDLE_NAME}"
+FINAL_ZIP_PATH="${BUILD_DIR}/${FINAL_ZIP_NAME}"
+
+SOURCE_FILES=("main.swift" "MyMenuBarApp/MyMenuBarApp/AppDelegate.swift")
+FRAMEWORKS=("-framework" "Cocoa" "-framework" "UserNotifications")
+
+# Check for --no-run flag (used in CI or just for building)
 NO_RUN=false
 for arg in "$@"; do
   if [ "$arg" = "--no-run" ]; then
@@ -8,84 +30,134 @@ for arg in "$@"; do
   fi
 done
 
-echo "=== Building DriveCache Sentry ==="
-echo "Building app (this may take a moment)..."
+echo "=== Building DriveCache Sentry v${VERSION} ==="
 
-# Create build directory if it doesn't exist
-mkdir -p build
+# Clean previous build
+echo "Cleaning previous build..."
+rm -rf "${BUILD_DIR}"
+mkdir -p "${BUILD_DIR}/intel"
+mkdir -p "${BUILD_DIR}/arm"
+mkdir -p "${BUILD_DIR}/universal"
 
-# Compile the main.swift file
-xcrun swiftc -o build/LightMenuBarApp main.swift MyMenuBarApp/MyMenuBarApp/AppDelegate.swift \
-  -framework Cocoa -framework UserNotifications
+# --- Compile for Intel (x86_64) ---
+echo "Compiling for Intel (x86_64)..."
+xcrun swiftc -target "x86_64-apple-macos${DEPLOYMENT_TARGET}" \
+  -o "${INTEL_BUILD_PATH}" "${SOURCE_FILES[@]}" "${FRAMEWORKS[@]}"
 
-# Check if compilation was successful
 if [ $? -ne 0 ]; then
-  echo "Build failed. Please check for errors."
+  echo "Intel build failed. Please check for errors."
   exit 1
 fi
 
-# Kill any existing instances if we're going to run
-if [ "$NO_RUN" = false ]; then
-  killall LightMenuBarApp &>/dev/null
+# --- Compile for Apple Silicon (arm64) ---
+echo "Compiling for Apple Silicon (arm64)..."
+xcrun swiftc -target "arm64-apple-macos${DEPLOYMENT_TARGET}" \
+  -o "${ARM_BUILD_PATH}" "${SOURCE_FILES[@]}" "${FRAMEWORKS[@]}"
+
+if [ $? -ne 0 ]; then
+  echo "Apple Silicon build failed. Please check for errors."
+  exit 1
 fi
 
-# Make it executable just in case
-chmod +x build/LightMenuBarApp
+# --- Create Universal Binary with lipo ---
+echo "Creating Universal Binary..."
+lipo -create -output "${UNIVERSAL_EXEC_PATH}" "${INTEL_BUILD_PATH}" "${ARM_BUILD_PATH}"
 
-# Create the .app bundle structure if it doesn't exist
-mkdir -p build/LightMenuBarApp.app/Contents/MacOS
-mkdir -p build/LightMenuBarApp.app/Contents/Resources
+if [ $? -ne 0 ]; then
+  echo "lipo failed. Could not create universal binary."
+  exit 1
+fi
 
-# Copy the executable to the app bundle
-cp build/LightMenuBarApp build/LightMenuBarApp.app/Contents/MacOS/
+# Make executable
+chmod +x "${UNIVERSAL_EXEC_PATH}"
 
-# Copy the icon file to the app bundle Resources
-if [ -f "Resources/AppIcon.icns" ]; then
-  cp Resources/AppIcon.icns build/LightMenuBarApp.app/Contents/Resources/
+# --- Create .app Bundle Structure ---
+echo "Creating application bundle structure..."
+mkdir -p "${APP_BUNDLE_PATH}/Contents/MacOS"
+mkdir -p "${APP_BUNDLE_PATH}/Contents/Resources"
+
+# Copy Universal Binary to .app
+echo "Copying universal binary..."
+cp "${UNIVERSAL_EXEC_PATH}" "${APP_BUNDLE_PATH}/Contents/MacOS/${APP_NAME}"
+
+# Copy Icon to .app
+if [ -f "${RESOURCES_DIR}/${ICON_NAME}" ]; then
+  echo "Copying icon..."
+  cp "${RESOURCES_DIR}/${ICON_NAME}" "${APP_BUNDLE_PATH}/Contents/Resources/"
 else
-  echo "Warning: Resources/AppIcon.icns not found. App will use default icon."
+  echo "Warning: ${RESOURCES_DIR}/${ICON_NAME} not found. App will use default icon."
 fi
 
-# Create an Info.plist for the app bundle
-cat > build/LightMenuBarApp.app/Contents/Info.plist << EOL
+# --- Create Info.plist ---
+echo "Creating Info.plist..."
+cat > "${APP_BUNDLE_PATH}/Contents/Info.plist" << EOL
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>LightMenuBarApp</string>
+    <string>${APP_NAME}</string>
     <key>CFBundleIconFile</key>
-    <string>AppIcon.icns</string>
+    <string>${ICON_NAME}</string>
     <key>CFBundleIdentifier</key>
     <string>com.drivcachesentry.app</string>
     <key>CFBundleName</key>
     <string>DriveCache Sentry</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>${DEPLOYMENT_TARGET}</string>
     <key>LSUIElement</key>
     <true/>
 </dict>
 </plist>
 EOL
 
-echo "Build successful!"
+echo "Application bundle created at: ${APP_BUNDLE_PATH}"
 
-# Only run the app if not in CI mode
+# --- Code Signing and Notarization Placeholder ---
+# If you have an Apple Developer ID, uncomment and configure these steps:
+echo "Skipping Code Signing & Notarization (Requires Apple Developer ID)"
+# DEVELOPER_ID_APPLICATION="Your Developer ID Application Certificate Name"
+# echo "Signing application bundle..."
+# codesign --force --deep --options=runtime --sign "${DEVELOPER_ID_APPLICATION}" "${APP_BUNDLE_PATH}"
+# if [ $? -ne 0 ]; then
+#   echo "Code signing failed."
+#   # Decide if you want to exit or continue without signing
+# fi
+# echo "Code signing complete."
+# Add notarization steps here using notarytool if desired
+
+# --- Package into .zip --- 
+echo "Packaging into .zip archive..."
+( # Run zip in a subshell to avoid changing directory of the main script
+  cd "${BUILD_DIR}" || exit 1
+  zip -r -q "${FINAL_ZIP_NAME}" "${APP_BUNDLE_NAME}"
+)
+if [ $? -ne 0 ]; then
+  echo "Failed to create .zip archive."
+  exit 1
+fi
+echo "Successfully packaged application into: ${FINAL_ZIP_PATH}"
+
+# --- Clean up temporary files ---
+echo "Cleaning up temporary build files..."
+rm -rf "${BUILD_DIR}/intel"
+rm -rf "${BUILD_DIR}/arm"
+rm -rf "${BUILD_DIR}/universal"
+
+echo "Build process complete!"
+
+# --- Run or Output Info ---
 if [ "$NO_RUN" = false ]; then
+  echo "Killing existing instances (if any)..."
+  killall "${APP_NAME}" &>/dev/null
   echo "Running app..."
-  
-  # Start the app
-  open build/LightMenuBarApp.app
-  
+  open "${APP_BUNDLE_PATH}"
   echo "App running in the background. Look for the 💾 icon in your menu bar."
-  echo "Features:"
-  echo "- Monitor multiple folders simultaneously"
-  echo "- Ultra-fast, non-recursive folder scanning"
-  echo "- Anti-freeze protection with visual indicators"
-  echo "- Daily checks at 16:20 with threshold-based notifications"
-  echo ""
-  echo "To configure folders and settings, click the 💾 icon in the menu bar."
 else
   echo "App built successfully but not running (--no-run flag detected)"
-  echo "App bundle created at: $(pwd)/build/LightMenuBarApp.app"
+  echo "Distribution package created at: $(pwd)/${FINAL_ZIP_PATH}"
 fi 
+
+exit 0 
