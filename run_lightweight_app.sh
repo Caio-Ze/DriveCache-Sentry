@@ -131,8 +131,26 @@ echo "Skipping Code Signing & Notarization (Requires Apple Developer ID)"
 # --- Package into .zip --- 
 echo "Packaging into .zip archive..."
 ( # Run zip in a subshell to avoid changing directory of the main script
+  # First, ensure INSTALL.md exists in the root to be copied
+  if [ ! -f "../INSTALL.md" ]; then 
+    echo "Error: INSTALL.md not found in project root. Cannot include in zip." >&2
+    exit 1 # Exit subshell with error
+  fi
+  
   cd "${BUILD_DIR}" || exit 1
-  zip -r -q "${FINAL_ZIP_NAME}" "${APP_BUNDLE_NAME}"
+  
+  # Clean potential old artifacts inside build before zipping
+  # Be careful with rm -rf
+  # rm -rf ./* # Maybe too aggressive? Let's just zip what we need.
+
+  # Copy INSTALL.md into the build dir temporarily for zipping
+  cp ../INSTALL.md .
+  
+  # Create zip with the App bundle AND the install instructions
+  zip -r -q "${FINAL_ZIP_NAME}" "${APP_BUNDLE_NAME}" "INSTALL.md"
+  
+  # Remove the temporary copy of INSTALL.md
+  rm INSTALL.md 
 )
 if [ $? -ne 0 ]; then
   echo "Failed to create .zip archive."
