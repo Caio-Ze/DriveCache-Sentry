@@ -146,27 +146,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 let exceededStatus = getFolderExceededStatus()
                 let didExceed = exceededStatus[folder] ?? false // Default to false if no status saved
                 
-                let prefix = didExceed ? "🔴 " : "   "
+                // Use standard Black Circle character and color it red if needed
+                let prefix = didExceed ? "● " : "   "
                 let fullTitleString = "\(prefix)📁 \(folderName) (\(threshold)MB)"
                 
-                // Create attributed string for potential size/style adjustments
+                // Create attributed string
                 let attributedTitle = NSMutableAttributedString(string: fullTitleString)
                 
-                // Get default menu font if possible, otherwise use system font
-                let defaultFont = NSFont.menuFont(ofSize: 0) // Size 0 gets the default menu font size
-                let baseFontSize = defaultFont.pointSize
+                // Apply default menu font
+                let defaultFont = NSFont.menuFont(ofSize: 0)
                 attributedTitle.addAttribute(.font, value: defaultFont, range: NSRange(location: 0, length: attributedTitle.length))
-                
-                // If the dot is present, make it smaller and adjust baseline
+
+                // If the dot prefix is present, color it red
                 if didExceed {
-                    let dotRange = NSRange(location: 0, length: 1) // Range of the first character "🔴"
-                    let smallerFontSize = baseFontSize * 0.7 // Adjust this multiplier for desired size (70%)
-                    let smallerFont = NSFont.systemFont(ofSize: smallerFontSize)
-                    attributedTitle.addAttribute(.font, value: smallerFont, range: dotRange)
-                    
-                    // Adjust baseline to keep the smaller dot vertically centered (might need tweaking)
-                    let baselineOffset = (baseFontSize - smallerFontSize) / 3 // Experiment with this offset
-                    attributedTitle.addAttribute(.baselineOffset, value: baselineOffset, range: dotRange)
+                    let dotRange = NSRange(location: 0, length: 1) // Range of the first character "●"
+                    attributedTitle.addAttribute(.foregroundColor, value: NSColor.red, range: dotRange)
+                    // Optional: Slightly adjust baseline if needed, but often not necessary without font size change
+                    // let baselineOffset = defaultFont.pointSize * 0.05 // Small adjustment if ● seems too low/high
+                    // attributedTitle.addAttribute(.baselineOffset, value: baselineOffset, range: dotRange)
                 }
 
                 // Create the menu item and set its attributed title
