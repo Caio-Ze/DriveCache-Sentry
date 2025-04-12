@@ -23,9 +23,9 @@ jobs:
         chmod +x run_lightweight_app.sh
         ./run_lightweight_app.sh --no-run
     
-    - name: Archive app
+    - name: Archive distribution package
       uses: actions/upload-artifact@v3
       with:
-        name: DriveCache-Sentry
-        path: build/LightMenuBarApp.app
+        name: DriveCache-Sentry-Package
+        path: build/DriveCache-Sentry-v*.zip
         if-no-files-found: error 
