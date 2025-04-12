@@ -152,6 +152,7 @@ echo "Cleaning up temporary build files..."
 rm -rf "${BUILD_DIR}/intel"
 rm -rf "${BUILD_DIR}/arm"
 rm -rf "${BUILD_DIR}/universal"
+rm -rf "${APP_BUNDLE_PATH}" # Remove the .app bundle after zipping
 
 echo "Build process complete!"
 
