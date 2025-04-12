@@ -916,7 +916,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         • Red dot indicator (●) for exceeded folders in menu
         • Daily checks at 16:20
         
-        Version 1.0.1 (Internal Build)
+        Version 1.0.2 (Internal Build)
         """
         alert.addButton(withTitle: "OK")
         

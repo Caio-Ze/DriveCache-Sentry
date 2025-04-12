@@ -26,6 +26,6 @@ jobs:
     - name: Archive distribution package
       uses: actions/upload-artifact@v4
       with:
-        name: DriveCache-Sentry-Package
+        name: DriveCache-Sentry-Package-v1.0.2
         path: build/DriveCache-Sentry-v*.zip
         if-no-files-found: error 

@@ -3,7 +3,7 @@
 # === Configuration ===
 APP_NAME="LightMenuBarApp"
 APP_BUNDLE_NAME="${APP_NAME}.app"
-VERSION="1.0.1" # Match version in About dialog
+VERSION="1.0.2" # Match version in About dialog
 BUILD_DIR="build"
 RESOURCES_DIR="Resources"
 ICON_NAME="Google-Noto-Emoji-Objects-62835-floppy-disk.icns"
