@@ -9,6 +9,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private let lastNotificationKey = "lastNotificationDate"
     private let foldersKey = "monitoredFolders"
     private let folderThresholdsKey = "folderThresholds"
+    private let folderExceededStatusKey = "folderExceededStatus"
     
     // Default values
     private let defaultFolderPath = "~/Library/Application Support/Google/DriveFS/Metadata"
@@ -39,6 +40,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             
             defaults.set(thresholds, forKey: folderThresholdsKey)
             print("Initialized folder thresholds")
+        }
+        
+        // Initialize exceeded status dictionary if needed
+        if defaults.dictionary(forKey: folderExceededStatusKey) == nil {
+            defaults.set([String: Bool](), forKey: folderExceededStatusKey)
+            print("Initialized folder exceeded status")
         }
         
         // Setup menu bar item with simple emoji
@@ -135,7 +142,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 let folderName = (folder as NSString).lastPathComponent
                 let threshold = thresholds[folder] ?? defaultThresholdMB
                 
-                let folderItem = NSMenuItem(title: "   📁 \(folderName) (\(threshold)MB)", action: nil, keyEquivalent: "")
+                // Get the last known exceeded status
+                let exceededStatus = getFolderExceededStatus()
+                let didExceed = exceededStatus[folder] ?? false // Default to false if no status saved
+                
+                let prefix = didExceed ? "🔴 " : "   "
+                let fullTitleString = "\(prefix)📁 \(folderName) (\(threshold)MB)"
+                
+                // Create attributed string for potential size/style adjustments
+                let attributedTitle = NSMutableAttributedString(string: fullTitleString)
+                
+                // Get default menu font if possible, otherwise use system font
+                let defaultFont = NSFont.menuFont(ofSize: 0) // Size 0 gets the default menu font size
+                let baseFontSize = defaultFont.pointSize
+                attributedTitle.addAttribute(.font, value: defaultFont, range: NSRange(location: 0, length: attributedTitle.length))
+                
+                // If the dot is present, make it smaller and adjust baseline
+                if didExceed {
+                    let dotRange = NSRange(location: 0, length: 1) // Range of the first character "🔴"
+                    let smallerFontSize = baseFontSize * 0.7 // Adjust this multiplier for desired size (70%)
+                    let smallerFont = NSFont.systemFont(ofSize: smallerFontSize)
+                    attributedTitle.addAttribute(.font, value: smallerFont, range: dotRange)
+                    
+                    // Adjust baseline to keep the smaller dot vertically centered (might need tweaking)
+                    let baselineOffset = (baseFontSize - smallerFontSize) / 3 // Experiment with this offset
+                    attributedTitle.addAttribute(.baselineOffset, value: baselineOffset, range: dotRange)
+                }
+
+                // Create the menu item and set its attributed title
+                let folderItem = NSMenuItem()
+                folderItem.attributedTitle = attributedTitle
+                folderItem.action = nil // Ensure it's not clickable itself
+                folderItem.keyEquivalent = ""
                 
                 // Create a submenu for each folder
                 let submenu = NSMenu()
@@ -200,6 +238,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         return defaults.dictionary(forKey: folderThresholdsKey) as? [String: Int] ?? [:]
     }
     
+    private func getFolderExceededStatus() -> [String: Bool] {
+        return defaults.dictionary(forKey: folderExceededStatusKey) as? [String: Bool] ?? [:]
+    }
+    
+    private func setFolderExceededStatus(_ folder: String, exceeded: Bool) {
+        var status = getFolderExceededStatus()
+        status[folder] = exceeded
+        defaults.set(status, forKey: folderExceededStatusKey)
+    }
+    
     private func setThresholdForFolder(_ folder: String, threshold: Int) {
         var thresholds = getFolderThresholds()
         thresholds[folder] = threshold
@@ -246,6 +294,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             
             // Set default threshold for the new folder
             setThresholdForFolder(url.path, threshold: defaultThresholdMB)
+            // Also initialize its exceeded status to false
+            setFolderExceededStatus(url.path, exceeded: false)
             
             updateMenu()
             
@@ -322,6 +372,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     var thresholds = getFolderThresholds()
                     thresholds.removeValue(forKey: folder)
                     defaults.set(thresholds, forKey: folderThresholdsKey)
+                    
+                    // Also remove its exceeded status
+                    var status = getFolderExceededStatus()
+                    status.removeValue(forKey: folder)
+                    defaults.set(status, forKey: folderExceededStatusKey)
                     
                     updateMenu()
                     
@@ -408,8 +463,73 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         }
     }
     
-    // MARK: - Ultra-Lightweight Size Calculation
+    // MARK: - Recursive Size Calculation with Depth Limit
     
+    private func calculateFolderSize(at path: String, maxDepth: Int) -> Int64 {
+        print("📁 Calculating size of folder: \(path) with max depth \(maxDepth)")
+        let fileManager = FileManager.default
+        let url = URL(fileURLWithPath: path)
+        
+        // Start the recursive calculation from depth 0
+        return calculateSizeRecursive(at: url, currentDepth: 0, maxDepth: maxDepth, fileManager: fileManager)
+    }
+
+    private func calculateSizeRecursive(at url: URL, currentDepth: Int, maxDepth: Int, fileManager: FileManager) -> Int64 {
+        // Base case: Depth limit reached
+        if currentDepth > maxDepth {
+            // print("   -> Depth limit (\(maxDepth)) reached at \(url.lastPathComponent), stopping recursion.")
+            return 0
+        }
+
+        var totalSize: Int64 = 0
+        var isDirectory: ObjCBool = false
+        
+        // Check if the current URL exists and is a directory
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            print("⚠️ Item does not exist or cannot be accessed: \(url.path)")
+            return 0
+        }
+
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            if let size = attributes[FileAttributeKey.size] as? NSNumber {
+                // Add the size of the directory entry itself (often small, but technically part of it)
+                // Comment this out if you only want the sum of *contained* items.
+                // totalSize += size.int64Value
+            }
+
+            // If it's not a directory, just return its size (this handles files passed directly)
+            if !isDirectory.boolValue {
+                 if let size = attributes[FileAttributeKey.size] as? NSNumber {
+                    // print("   -> File found: \(url.lastPathComponent) size: \(formatFileSize(size.int64Value)) at depth \(currentDepth)")
+                    return size.int64Value
+                 } else {
+                     print("⚠️ Could not get size attribute for file: \(url.path)")
+                     return 0
+                 }
+            }
+
+            // It's a directory, and we are within the depth limit, so proceed to read contents
+            // print("   -> Directory found: \(url.lastPathComponent) at depth \(currentDepth). Reading contents...")
+            let contents = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey, .totalFileSizeKey, .fileSizeKey], options: [.skipsHiddenFiles])
+           
+            // print("   -> Found \(contents.count) items in \(url.lastPathComponent)")
+            for itemURL in contents {
+                // Recursively call for each item inside
+                totalSize += calculateSizeRecursive(at: itemURL, currentDepth: currentDepth + 1, maxDepth: maxDepth, fileManager: fileManager)
+            }
+
+        } catch {
+            print("❌ Error processing item \(url.path): \(error.localizedDescription)")
+            // Silently fail for this item/subtree if errors occur
+        }
+        
+        // print("   -> Total size for \(url.lastPathComponent) at depth \(currentDepth): \(formatFileSize(totalSize))")
+        return totalSize
+    }
+    
+    // MARK: - Ultra-Lightweight Size Calculation (REPLACED)
+    /*
     private func quicklyCalculateFolderSize(at path: String) -> Int64 {
         print("📁 Calculating size of folder: \(path)")
         // The lightest possible size calculation - don't recurse, just top level
@@ -442,7 +562,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         print("📊 Total folder size calculated: \(formatFileSize(totalSize))")
         return totalSize
     }
-    
+    */
+
     private func formatFileSize(_ size: Int64) -> String {
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useAll]
@@ -537,8 +658,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     return 
                 }
                 
-                print("🧮 Calculating folder size...")
-                let folderSize = self.quicklyCalculateFolderSize(at: folderPath)
+                print("🧮 Calculating folder size (depth limited)...")
+                // Call the new depth-limited function with maxDepth = 5
+                let folderSize = self.calculateFolderSize(at: folderPath, maxDepth: 5)
                 let formattedSize = self.formatFileSize(folderSize)
                 let folderName = URL(fileURLWithPath: folderPath).lastPathComponent
                 let threshold = self.getFolderThresholds()[folder] ?? self.defaultThresholdMB
@@ -547,9 +669,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 print("📊 Size calculation complete: \(folderName) is \(formattedSize)")
                 
                 DispatchQueue.main.async {
-                    // Restore icon
+                    // Update the exceeded status in UserDefaults
+                    let exceededStatus = self.getFolderExceededStatus()
+                    let exceedsThreshold = folderSize > (Int64(threshold) * 1024 * 1024)
+                    self.setFolderExceededStatus(folder, exceeded: exceedsThreshold)
+
+                    // Restore icon (always use default icon now)
                     if let button = self.statusItem.button {
-                        button.title = "💾"
+                        button.title = "💾" // Always set back to the default icon
                         print("💾 Restored menu bar icon")
                     } else {
                         print("❌ Status button is nil when restoring icon")
@@ -607,12 +734,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             
             for folder in folders {
                 let folderPath = (folder as NSString).expandingTildeInPath
-                let folderSize = self.quicklyCalculateFolderSize(at: folderPath)
+                // Call the new depth-limited function with maxDepth = 5
+                let folderSize = self.calculateFolderSize(at: folderPath, maxDepth: 5)
                 let folderName = URL(fileURLWithPath: folderPath).lastPathComponent
                 let thresholdMB = self.getFolderThresholds()[folder] ?? self.defaultThresholdMB
                 let thresholdBytes = Int64(thresholdMB) * 1024 * 1024
                 let exceeds = folderSize > thresholdBytes
                 
+                // Update status for this specific folder immediately after check
+                self.setFolderExceededStatus(folder, exceeded: exceeds)
+
                 results.append((folderName, folderSize, thresholdBytes, exceeds))
                 
                 if exceeds {
@@ -691,14 +822,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             
             for folder in folders {
                 let folderPath = (folder as NSString).expandingTildeInPath
-                let folderSize = self.quicklyCalculateFolderSize(at: folderPath)
+                // Call the new depth-limited function with maxDepth = 5
+                let folderSize = self.calculateFolderSize(at: folderPath, maxDepth: 5)
                 let thresholdMB = self.getFolderThresholds()[folder] ?? self.defaultThresholdMB
                 let thresholdBytes = Int64(thresholdMB) * 1024 * 1024
                 
                 if folderSize > thresholdBytes {
+                    // Update status for this folder
+                    self.setFolderExceededStatus(folder, exceeded: true)
                     let folderName = URL(fileURLWithPath: folderPath).lastPathComponent
                     exceededFolders.append((folderName, folderSize, thresholdBytes))
                     anyExceedsThreshold = true
+                } else {
+                    // Update status for this folder
+                    self.setFolderExceededStatus(folder, exceeded: false)
                 }
             }
             
