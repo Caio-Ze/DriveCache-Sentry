@@ -128,37 +128,26 @@ echo "Skipping Code Signing & Notarization (Requires Apple Developer ID)"
 # echo "Code signing complete."
 # Add notarization steps here using notarytool if desired
 
-# --- Package into .zip --- 
+# --- Package into .zip (Run from project root) --- 
 echo "Packaging into .zip archive..."
-( # Run zip in a subshell to avoid changing directory of the main script
-  # First, ensure INSTALL.md exists in the root to be copied
-  if [ ! -f "../INSTALL.md" ]; then 
-    echo "Error: INSTALL.md not found in project root. Cannot include in zip." >&2
-    exit 1 # Exit subshell with error
-  fi
-  
-  cd "${BUILD_DIR}" || exit 1
-  
-  # Clean potential old artifacts inside build before zipping
-  # Be careful with rm -rf
-  # rm -rf ./* # Maybe too aggressive? Let's just zip what we need.
+if [ ! -f "INSTALL.md" ]; then
+  echo "Error: INSTALL.md not found in project root. Cannot create zip." >&2
+  exit 1
+fi
 
-  # Copy INSTALL.md into the build dir temporarily for zipping
-  cp ../INSTALL.md .
-  
-  # Create zip with the App bundle AND the install instructions
-  zip -r -q "${FINAL_ZIP_NAME}" "${APP_BUNDLE_NAME}" "INSTALL.md"
-  
-  # Remove the temporary copy of INSTALL.md
-  rm INSTALL.md 
-)
+# Remove previous zip if it exists
+rm -f "${FINAL_ZIP_PATH}"
+
+# Create zip containing the built .app and INSTALL.md
+zip -r -q "${FINAL_ZIP_PATH}" "${APP_BUNDLE_PATH}" "INSTALL.md"
+
 if [ $? -ne 0 ]; then
   echo "Failed to create .zip archive."
   exit 1
 fi
 echo "Successfully packaged application into: ${FINAL_ZIP_PATH}"
 
-# --- Clean up temporary files ---
+# --- Clean up temporary build files ---
 echo "Cleaning up temporary build files..."
 rm -rf "${BUILD_DIR}/intel"
 rm -rf "${BUILD_DIR}/arm"
