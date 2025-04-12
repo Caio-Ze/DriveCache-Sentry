@@ -920,6 +920,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         """
         alert.addButton(withTitle: "OK")
         
+        // Set the application icon for the alert
+        if let appIcon = NSImage(named: "AppIcon") {
+            alert.icon = appIcon
+        } else {
+            // Fallback if AppIcon.icns isn't found in bundle
+            alert.icon = NSApplication.shared.applicationIconImage 
+        }
+        
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }

@@ -34,9 +34,17 @@ chmod +x build/LightMenuBarApp
 
 # Create the .app bundle structure if it doesn't exist
 mkdir -p build/LightMenuBarApp.app/Contents/MacOS
+mkdir -p build/LightMenuBarApp.app/Contents/Resources
 
 # Copy the executable to the app bundle
 cp build/LightMenuBarApp build/LightMenuBarApp.app/Contents/MacOS/
+
+# Copy the icon file to the app bundle Resources
+if [ -f "Resources/AppIcon.icns" ]; then
+  cp Resources/AppIcon.icns build/LightMenuBarApp.app/Contents/Resources/
+else
+  echo "Warning: Resources/AppIcon.icns not found. App will use default icon."
+fi
 
 # Create an Info.plist for the app bundle
 cat > build/LightMenuBarApp.app/Contents/Info.plist << EOL
@@ -46,6 +54,8 @@ cat > build/LightMenuBarApp.app/Contents/Info.plist << EOL
 <dict>
     <key>CFBundleExecutable</key>
     <string>LightMenuBarApp</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
     <key>CFBundleIdentifier</key>
     <string>com.drivcachesentry.app</string>
     <key>CFBundleName</key>
